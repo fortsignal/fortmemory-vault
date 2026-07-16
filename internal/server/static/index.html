@@ -67,9 +67,17 @@
     .hit .path { font-family: var(--mono); font-size: 0.85rem; color: var(--accent); }
     .hit .ex { color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; white-space: pre-wrap; }
     a { color: var(--accent); }
-    .token-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+    .token-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
     .token-row label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+    #token-status { font-size: 0.8rem; color: var(--muted); min-width: 6rem; }
+    #token-status.ok { color: var(--allow); }
+    #token-status.err { color: var(--deny); }
     #view-settings ul { margin: 0.5rem 0; padding-left: 1.2rem; color: var(--muted); }
+    .field { margin: 0.75rem 0; }
+    .field label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; }
+    .field input { width: 100%; background: var(--panel); border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 0.6rem 0.75rem; font: inherit; font-family: var(--mono); font-size: 0.85rem; }
+    .field .actions { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
     .hidden { display: none; }
   </style>
 </head>
@@ -90,9 +98,10 @@
   </aside>
   <main>
     <div class="token-row">
-      <label for="token">Bearer</label>
-      <input id="token" type="password" placeholder="fm_… agent token (for search/activity)" autocomplete="off" />
+      <label for="token">Token</label>
+      <input id="token" type="password" placeholder="fm_… from: fortmemory token" autocomplete="off" />
       <button type="button" class="ghost" id="save-token">Save</button>
+      <span id="token-status"></span>
     </div>
 
     <section id="view-home">
@@ -130,24 +139,42 @@
           <strong>Agents</strong>
           <button type="button" class="ghost" id="refresh-agents">Refresh</button>
         </div>
-        <p class="muted">Local API agents (token store). Signing keys + FortSignal delegation required for writes.</p>
+        <p class="muted">Local API agents. FortSignal signing keys needed for writes.</p>
         <div id="agents-table" class="muted">Token required.</div>
       </div>
     </section>
 
     <section id="view-settings" class="hidden">
       <div class="card">
-        <strong>Settings</strong>
-        <p class="muted">Daily use is search &amp; activity. Policy authoring lives in FortSignal.</p>
+        <strong>Local dashboard token</strong>
+        <p class="muted">This is an <span class="mono">fm_…</span> token from the CLI — <strong>not</strong> your FortSignal <span class="mono">fs_live_…</span> key.</p>
+        <div class="field">
+          <label for="settings-token">Token</label>
+          <input id="settings-token" type="password" placeholder="Run: fortmemory token" autocomplete="off" />
+          <div class="actions">
+            <button type="button" class="primary" id="settings-save">Save token</button>
+            <span id="settings-status" class="muted"></span>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:1rem">Get a token:</p>
+        <pre class="mono" style="background:#0a0e13;padding:0.75rem;border-radius:8px;overflow:auto">fortmemory token</pre>
+        <p class="muted">Paste the printed <span class="mono">fm_…</span> value above, click Save. Stored in this browser only.</p>
+      </div>
+      <div class="card">
+        <strong>FortSignal (writes)</strong>
+        <p class="muted">API key stays in your shell env — not in this UI (on purpose).</p>
+        <pre class="mono" style="background:#0a0e13;padding:0.75rem;border-radius:8px;overflow:auto">export FORTSIGNAL_API_KEY=fs_live_…</pre>
         <ul>
-          <li><a href="https://fortsignal.com/composer" target="_blank" rel="noopener">Policy Composer</a> — natural language memory rules</li>
-          <li><a href="https://fortsignal.com/dashboard" target="_blank" rel="noopener">FortSignal Dashboard</a> — agent passports &amp; delegations</li>
-          <li>CLI: <span class="mono">fortmemory agent add …</span> · <span class="mono">fortmemory reindex</span></li>
-          <li>Remote (optional): <span class="mono">fortmemory tailscale</span> · <span class="mono">fortmemory cloudflare</span></li>
-          <li>Docs: REMOTE-ACCESS.md · PRODUCT-SURFACE.md · SYSTEM-ARCHITECTURE.md</li>
+          <li><a href="https://fortsignal.com/dashboard" target="_blank" rel="noopener">FortSignal Dashboard</a> — agents &amp; delegations</li>
+          <li><a href="https://fortsignal.com/composer" target="_blank" rel="noopener">Policy Composer</a></li>
         </ul>
-        <p class="muted">Default agent write roots: <span class="mono">Scratch/**</span>, <span class="mono">Inbox/**</span>. Keep <span class="mono">Private/**</span> human-only.</p>
-        <p class="muted">Local by default (<span class="mono">127.0.0.1</span>). Tailscale = tailnet mesh. Cloudflare Tunnel = hostname/Access.</p>
+      </div>
+      <div class="card">
+        <strong>More</strong>
+        <ul>
+          <li>CLI: <span class="mono">fortmemory token</span> · <span class="mono">fortmemory reindex</span></li>
+          <li>Remote: <span class="mono">fortmemory tailscale</span> · <span class="mono">fortmemory cloudflare</span></li>
+        </ul>
       </div>
     </section>
   </main>
@@ -163,12 +190,54 @@
       return t ? { 'Authorization': 'Bearer ' + t } : {};
     }
 
-    $('token').value = localStorage.getItem(tokenKey) || '';
-    $('save-token').onclick = () => {
-      localStorage.setItem(tokenKey, $('token').value.trim());
+    function setTokenStatus(msg, kind) {
+      const el = $('token-status');
+      el.textContent = msg || '';
+      el.className = kind || '';
+      const s = $('settings-status');
+      if (s) {
+        s.textContent = msg || '';
+        s.className = kind === 'ok' ? 'muted' : 'muted';
+        if (kind === 'ok') s.style.color = 'var(--allow)';
+        else if (kind === 'err') s.style.color = 'var(--deny)';
+        else s.style.color = '';
+      }
+    }
+
+    async function saveToken(fromSettings) {
+      const raw = fromSettings ? $('settings-token').value : $('token').value;
+      const t = (raw || '').trim();
+      if (!t) {
+        setTokenStatus('Paste an fm_… token first', 'err');
+        return;
+      }
+      if (t.startsWith('fs_live_') || t.startsWith('fs_')) {
+        setTokenStatus('That’s a FortSignal key — need fm_… from: fortmemory token', 'err');
+        return;
+      }
+      localStorage.setItem(tokenKey, t);
+      $('token').value = t;
+      if ($('settings-token')) $('settings-token').value = t;
+      setTokenStatus('Saved', 'ok');
+      // verify against API
+      try {
+        const r = await fetch('/v1/receipts?limit=1', { headers: authHeaders() });
+        if (r.status === 401) {
+          setTokenStatus('Saved but invalid (401) — run fortmemory token again', 'err');
+        } else if (r.ok) {
+          setTokenStatus('Saved · ok', 'ok');
+        }
+      } catch (_) { /* offline */ }
       loadHome();
       loadActivity();
-    };
+    }
+
+    $('token').value = localStorage.getItem(tokenKey) || '';
+    $('settings-token').value = localStorage.getItem(tokenKey) || '';
+    $('save-token').onclick = () => saveToken(false);
+    $('settings-save').onclick = () => saveToken(true);
+    $('token').addEventListener('keydown', e => { if (e.key === 'Enter') saveToken(false); });
+    $('settings-token').addEventListener('keydown', e => { if (e.key === 'Enter') saveToken(true); });
 
     document.querySelectorAll('nav button').forEach(btn => {
       btn.onclick = () => {
@@ -178,6 +247,9 @@
           $('view-' + v).classList.toggle('hidden', v !== btn.dataset.view);
         });
         if (btn.dataset.view === 'agents') loadAgents();
+        if (btn.dataset.view === 'settings') {
+          $('settings-token').value = localStorage.getItem(tokenKey) || $('token').value || '';
+        }
       };
     });
 
@@ -305,7 +377,7 @@
         const j = await r.json();
         const rows = j.agents || [];
         if (!rows.length) {
-          el.innerHTML = '<span class="muted">No agents. CLI: fortmemory agent add &lt;id&gt; --key agent-key.json</span>';
+          el.innerHTML = '<span class="muted">No agents yet. CLI: <span class="mono">fortmemory token</span> or <span class="mono">fortmemory agent add …</span></span>';
           return;
         }
         el.innerHTML = `<table>
