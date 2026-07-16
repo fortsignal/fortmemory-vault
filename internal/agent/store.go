@@ -32,8 +32,7 @@ type persistedAgent struct {
 // OpenFileStore loads or creates agents.json.
 func OpenFileStore(path string) (*FileStore, error) {
 	s := &FileStore{path: path, data: storeFile{Agents: []persistedAgent{}}}
-	b, err := os.ReadFile(path)
-	if err != nil {
+	if err := s.reload(); err != nil {
 		if os.IsNotExist(err) {
 			if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 				return nil, err
@@ -42,12 +41,27 @@ func OpenFileStore(path string) (*FileStore, error) {
 		}
 		return nil, err
 	}
+	return s, nil
+}
+
+// reload reads agents.json from disk into memory (caller should hold mu for consistency
+// when used after Open; Lookup reloads under its own lock).
+func (s *FileStore) reload() error {
+	b, err := os.ReadFile(s.path)
+	if err != nil {
+		return err
+	}
+	var data storeFile
 	if len(b) > 0 {
-		if err := json.Unmarshal(b, &s.data); err != nil {
-			return nil, fmt.Errorf("parse agents store: %w", err)
+		if err := json.Unmarshal(b, &data); err != nil {
+			return fmt.Errorf("parse agents store: %w", err)
 		}
 	}
-	return s, nil
+	if data.Agents == nil {
+		data.Agents = []persistedAgent{}
+	}
+	s.data = data
+	return nil
 }
 
 func (s *FileStore) save() error {
@@ -104,6 +118,7 @@ func (s *FileStore) Register(ctx context.Context, agentID, keyPath string) (plai
 	_ = ctx
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	_ = s.reload() // pick up concurrent CLI token rotations
 	return s.addLocked(agentID, keyPath)
 }
 
@@ -128,6 +143,10 @@ func (s *FileStore) LookupByToken(ctx context.Context, token string) (*Record, e
 	h := hashToken(token)
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Reload so `fortmemory token` in another process is visible without restart.
+	if err := s.reload(); err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
 	for _, a := range s.data.Agents {
 		if a.TokenHash == h {
 			return &Record{AgentID: a.AgentID, TokenHash: a.TokenHash, KeyPath: a.KeyPath}, nil
@@ -140,6 +159,7 @@ func (s *FileStore) Get(ctx context.Context, agentID string) (*Record, error) {
 	_ = ctx
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	_ = s.reload()
 	for _, a := range s.data.Agents {
 		if a.AgentID == agentID {
 			return &Record{AgentID: a.AgentID, TokenHash: a.TokenHash, KeyPath: a.KeyPath}, nil
@@ -152,6 +172,7 @@ func (s *FileStore) List(ctx context.Context) ([]Record, error) {
 	_ = ctx
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	_ = s.reload()
 	out := make([]Record, 0, len(s.data.Agents))
 	for _, a := range s.data.Agents {
 		out = append(out, Record{AgentID: a.AgentID, TokenHash: a.TokenHash, KeyPath: a.KeyPath})
