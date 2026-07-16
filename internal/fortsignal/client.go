@@ -70,21 +70,56 @@ type ChallengeVerifyRequest struct {
 
 // VerifyResult is the allow/deny envelope from /challenge/verify.
 type VerifyResult struct {
-	Decision     string         `json:"decision"`
-	Reason       string         `json:"reason,omitempty"`
-	SignalID     string         `json:"signalId,omitempty"`
-	PolicyID     string         `json:"policyId,omitempty"`
-	DelegationID string         `json:"delegationId,omitempty"`
-	VerifiedBy   string         `json:"verifiedBy,omitempty"`
-	VerifiedAt   string         `json:"verifiedAt,omitempty"`
-	AgentID      string         `json:"agentId,omitempty"`
-	Action       string         `json:"action,omitempty"`
-	Amount       float64        `json:"amount,omitempty"`
-	Recipient    string         `json:"recipient,omitempty"`
-	Source       string         `json:"source,omitempty"`
-	Metadata     map[string]any `json:"metadata,omitempty"`
-	ScopeApplied string         `json:"scope_applied,omitempty"`
-	HTTPStatus   int            `json:"-"`
+	Decision     string           `json:"decision"`
+	Reason       string           `json:"reason,omitempty"`
+	SignalID     string           `json:"signalId,omitempty"`
+	PolicyID     string           `json:"policyId,omitempty"`
+	DelegationID string           `json:"delegationId,omitempty"`
+	VerifiedBy   string           `json:"verifiedBy,omitempty"`
+	VerifiedAt   string           `json:"verifiedAt,omitempty"`
+	AgentID      string           `json:"agentId,omitempty"`
+	Action       string           `json:"action,omitempty"`
+	Amount       float64          `json:"amount,omitempty"`
+	Recipient    string           `json:"recipient,omitempty"`
+	Source       string           `json:"source,omitempty"`
+	Metadata     FlexibleMetadata `json:"metadata,omitempty"`
+	ScopeApplied string           `json:"scope_applied,omitempty"`
+	HTTPStatus   int              `json:"-"`
+}
+
+// FlexibleMetadata accepts FortSignal metadata as either a JSON object or a
+// JSON string containing an object (verify responses use the string form).
+type FlexibleMetadata map[string]any
+
+func (m *FlexibleMetadata) UnmarshalJSON(b []byte) error {
+	if len(b) == 0 || string(b) == "null" {
+		*m = nil
+		return nil
+	}
+	// String form: "\"{...}\"" or "\"\""
+	if b[0] == '"' {
+		var s string
+		if err := json.Unmarshal(b, &s); err != nil {
+			return err
+		}
+		if s == "" {
+			*m = nil
+			return nil
+		}
+		var obj map[string]any
+		if err := json.Unmarshal([]byte(s), &obj); err != nil {
+			*m = map[string]any{"_raw": s}
+			return nil
+		}
+		*m = obj
+		return nil
+	}
+	var obj map[string]any
+	if err := json.Unmarshal(b, &obj); err != nil {
+		return err
+	}
+	*m = obj
+	return nil
 }
 
 // AgentRegisterRequest is POST /agent/register.

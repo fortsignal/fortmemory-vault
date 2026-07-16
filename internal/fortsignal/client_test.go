@@ -104,12 +104,14 @@ func TestChallengeVerifyAllow(t *testing.T) {
 		if r.URL.Path != "/challenge/verify" {
 			t.Fatalf("path %s", r.URL.Path)
 		}
+		// FortSignal returns metadata as a JSON string, not an object.
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"decision":   "allow",
 			"signalId":   "sig-1",
 			"verifiedBy": "agent",
 			"verifiedAt": "2026-07-16T00:00:00Z",
 			"agentId":    "a1",
+			"metadata":   `{"vaultId":"jeff","contentHash":"sha256:abc"}`,
 		})
 	}))
 	defer srv.Close()
