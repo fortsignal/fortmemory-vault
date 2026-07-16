@@ -19,6 +19,7 @@ Obsidian-compatible files · FortSignal-governed mutates · HTTP + MCP for agent
 [![MCP](https://img.shields.io/badge/MCP-supported-8b5cf6?style=flat-square)](#mcp)
 [![Status](https://img.shields.io/badge/status-MVP-f59e0b?style=flat-square)](#status)
 
+[![CI](https://img.shields.io/github/actions/workflow/status/fortsignal/fortmemory-vault/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/fortsignal/fortmemory-vault/actions)
 [![Stars](https://img.shields.io/github/stars/fortsignal/fortmemory-vault?style=flat-square&logo=github)](https://github.com/fortsignal/fortmemory-vault/stargazers)
 [![Forks](https://img.shields.io/github/forks/fortsignal/fortmemory-vault?style=flat-square&logo=github)](https://github.com/fortsignal/fortmemory-vault/network/members)
 [![Issues](https://img.shields.io/github/issues/fortsignal/fortmemory-vault?style=flat-square)](https://github.com/fortsignal/fortmemory-vault/issues)
