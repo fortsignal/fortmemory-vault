@@ -1,0 +1,359 @@
+openapi: 3.0.3
+info:
+  title: FortMemory Local API
+  version: 0.1.0
+  description: |
+    Local-first agentic memory API. Mutating operations are gated by FortSignal.
+    Default bind: 127.0.0.1:7432
+servers:
+  - url: http://127.0.0.1:7432
+    description: Local daemon (default)
+tags:
+  - name: system
+  - name: memory
+  - name: audit
+paths:
+  /v1/health:
+    get:
+      tags: [system]
+      summary: Health and vault status
+      operationId: getHealth
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /v1/search:
+    post:
+      tags: [memory]
+      summary: Hybrid search over the vault
+      operationId: searchMemory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequest"
+      responses:
+        "200":
+          description: Search hits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/read:
+    get:
+      tags: [memory]
+      summary: Read a Markdown file
+      operationId: readMemory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema:
+            type: string
+            example: Scratch/note.md
+      responses:
+        "200":
+          description: File content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/write:
+    post:
+      tags: [memory]
+      summary: Write memory (FortSignal-gated)
+      operationId: writeMemory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WriteRequest"
+      responses:
+        "200":
+          description: Allow or deny decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutateResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/FortSignalUnavailable"
+  /v1/delete:
+    post:
+      tags: [memory]
+      summary: Delete memory file (FortSignal-gated)
+      operationId: deleteMemory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteRequest"
+      responses:
+        "200":
+          description: Allow or deny decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutateResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/FortSignalUnavailable"
+  /v1/receipts:
+    get:
+      tags: [audit]
+      summary: List local governance receipts
+      operationId: listReceipts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: decision
+          in: query
+          schema:
+            type: string
+            enum: [allow, deny]
+        - name: pathPrefix
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Receipt page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReceiptsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Local FortMemory agent token (not the FortSignal API key)
+  responses:
+    Unauthorized:
+      description: Missing or invalid local token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Path not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    FortSignalUnavailable:
+      description: Enforcement plane unreachable; mutate failed closed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+    HealthResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        version:
+          type: string
+        vaultId:
+          type: string
+        vaultPath:
+          type: string
+        index:
+          type: object
+          properties:
+            files:
+              type: integer
+            embedPending:
+              type: integer
+        fortsignal:
+          type: object
+          properties:
+            configured:
+              type: boolean
+    SearchRequest:
+      type: object
+      required: [q]
+      properties:
+        q:
+          type: string
+        topK:
+          type: integer
+          default: 8
+          minimum: 1
+          maximum: 50
+        tags:
+          type: array
+          items:
+            type: string
+        pathPrefix:
+          type: string
+    SearchHit:
+      type: object
+      properties:
+        path:
+          type: string
+        score:
+          type: number
+        excerpt:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        sensitivity:
+          type: string
+          enum: [public, internal, confidential, restricted]
+        lastSignalId:
+          type: string
+          format: uuid
+          nullable: true
+    SearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchHit"
+    ReadResponse:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        contentHash:
+          type: string
+        lastSignalId:
+          type: string
+          format: uuid
+          nullable: true
+    WriteRequest:
+      type: object
+      required: [path, content, mode]
+      properties:
+        path:
+          type: string
+          description: Relative path under vault root
+        content:
+          type: string
+          description: Full Markdown body to write (exact bytes hashed)
+        mode:
+          type: string
+          enum: [create, append, overwrite]
+    DeleteRequest:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+    MutateResponse:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [allow, deny]
+        reason:
+          type: string
+          nullable: true
+        signalId:
+          type: string
+          format: uuid
+          nullable: true
+        path:
+          type: string
+        contentHash:
+          type: string
+        verifiedBy:
+          type: string
+          enum: [human, agent]
+        verifiedAt:
+          type: string
+          format: date-time
+        delegationId:
+          type: string
+          nullable: true
+        policyId:
+          type: string
+          nullable: true
+    Receipt:
+      type: object
+      properties:
+        id:
+          type: string
+        signalId:
+          type: string
+          nullable: true
+        decision:
+          type: string
+          enum: [allow, deny]
+        reason:
+          type: string
+          nullable: true
+        action:
+          type: string
+        path:
+          type: string
+        contentHash:
+          type: string
+          nullable: true
+        agentId:
+          type: string
+          nullable: true
+        verifiedBy:
+          type: string
+          nullable: true
+        verifiedAt:
+          type: string
+          format: date-time
+    ReceiptsResponse:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/Receipt"

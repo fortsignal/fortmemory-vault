@@ -1,0 +1,10 @@
+FortMemory
+Copyright 2026 Jeffrey Walters / FortSignal
+
+This product includes software developed for FortMemory, the local-first
+verifiable agentic memory layer associated with FortSignal (https://fortsignal.com).
+
+FortSignal, FortMemory, and FortVault are trademarks of FortSignal / Jeffrey Walters.
+This NOTICE does not grant trademark rights.
+
+Third-party dependencies are listed in go.mod and retain their own licenses.

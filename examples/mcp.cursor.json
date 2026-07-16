@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "fortmemory": {
+      "command": "fortmemory",
+      "args": [
+        "mcp",
+        "--config",
+        "/HOME/Vaults/Personal/.fortmemory/config.toml",
+        "--agent",
+        "research-01",
+        "--key",
+        "/HOME/path/to/agent-key.json"
+      ],
+      "env": {
+        "FORTSIGNAL_API_KEY": "fs_live_REPLACE_ME"
+      }
+    }
+  }
+}

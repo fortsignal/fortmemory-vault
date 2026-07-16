@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FortMemory</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121820;
+      --border: #1e2a36;
+      --text: #e7eef6;
+      --muted: #8b9bb0;
+      --accent: #3b82f6;
+      --allow: #22c55e;
+      --deny: #ef4444;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: var(--sans); background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex;
+    }
+    aside {
+      width: 200px; border-right: 1px solid var(--border); padding: 1.25rem 1rem;
+      background: #0a0e13; flex-shrink: 0;
+    }
+    aside h1 { font-size: 1rem; margin: 0 0 0.25rem; letter-spacing: 0.02em; }
+    aside .sub { color: var(--muted); font-size: 0.75rem; margin-bottom: 1.5rem; }
+    nav button {
+      display: block; width: 100%; text-align: left; background: transparent; border: 0;
+      color: var(--muted); padding: 0.5rem 0.6rem; border-radius: 6px; cursor: pointer;
+      font: inherit; margin-bottom: 0.25rem;
+    }
+    nav button.active, nav button:hover { background: var(--panel); color: var(--text); }
+    main { flex: 1; padding: 1.25rem 1.5rem; max-width: 960px; }
+    .bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    input[type=text], input[type=password] {
+      flex: 1; background: var(--panel); border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 0.6rem 0.75rem; font: inherit;
+    }
+    button.primary {
+      background: var(--accent); color: white; border: 0; border-radius: 8px;
+      padding: 0.6rem 0.9rem; font: inherit; cursor: pointer;
+    }
+    button.ghost {
+      background: var(--panel); color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.5rem 0.75rem; font: inherit; cursor: pointer;
+    }
+    .card {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem; margin-bottom: 1rem;
+    }
+    .muted { color: var(--muted); font-size: 0.875rem; }
+    .mono { font-family: var(--mono); font-size: 0.8rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th, td { text-align: left; padding: 0.45rem 0.35rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-weight: 500; }
+    .badge {
+      display: inline-block; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.75rem;
+      font-family: var(--mono);
+    }
+    .badge.allow { background: rgba(34,197,94,0.15); color: var(--allow); }
+    .badge.deny { background: rgba(239,68,68,0.15); color: var(--deny); }
+    .hit { border-bottom: 1px solid var(--border); padding: 0.75rem 0; }
+    .hit .path { font-family: var(--mono); font-size: 0.85rem; color: var(--accent); }
+    .hit .ex { color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; white-space: pre-wrap; }
+    a { color: var(--accent); }
+    .token-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+    .token-row label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+    #view-settings ul { margin: 0.5rem 0; padding-left: 1.2rem; color: var(--muted); }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <aside>
+    <h1>FortMemory</h1>
+    <div class="sub" id="vault-label">local memory</div>
+    <nav>
+      <button type="button" data-view="home" class="active">Home</button>
+      <button type="button" data-view="search">Search</button>
+      <button type="button" data-view="activity">Activity</button>
+      <button type="button" data-view="agents">Agents</button>
+      <button type="button" data-view="settings">Settings</button>
+    </nav>
+    <p class="muted" style="margin-top:2rem;font-size:0.75rem">
+      Memory product · governance via FortSignal
+    </p>
+  </aside>
+  <main>
+    <div class="token-row">
+      <label for="token">Bearer</label>
+      <input id="token" type="password" placeholder="fm_… agent token (for search/activity)" autocomplete="off" />
+      <button type="button" class="ghost" id="save-token">Save</button>
+    </div>
+
+    <section id="view-home">
+      <div class="card" id="health-card">
+        <div class="muted">Loading health…</div>
+      </div>
+      <div class="card">
+        <strong>Recent activity</strong>
+        <p class="muted">Governed writes and denies (requires token).</p>
+        <div id="home-activity"></div>
+      </div>
+    </section>
+
+    <section id="view-search" class="hidden">
+      <div class="bar">
+        <input id="q" type="text" placeholder="Search vault memory…" />
+        <button type="button" class="primary" id="do-search">Search</button>
+      </div>
+      <div id="search-results" class="card muted">Enter a query.</div>
+    </section>
+
+    <section id="view-activity" class="hidden">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+          <strong>Activity / receipts</strong>
+          <button type="button" class="ghost" id="refresh-activity">Refresh</button>
+        </div>
+        <div id="activity-table" class="muted">Load with agent token.</div>
+      </div>
+    </section>
+
+    <section id="view-agents" class="hidden">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+          <strong>Agents</strong>
+          <button type="button" class="ghost" id="refresh-agents">Refresh</button>
+        </div>
+        <p class="muted">Local API agents (token store). Signing keys + FortSignal delegation required for writes.</p>
+        <div id="agents-table" class="muted">Token required.</div>
+      </div>
+    </section>
+
+    <section id="view-settings" class="hidden">
+      <div class="card">
+        <strong>Settings</strong>
+        <p class="muted">Daily use is search &amp; activity. Policy authoring lives in FortSignal.</p>
+        <ul>
+          <li><a href="https://fortsignal.com/composer" target="_blank" rel="noopener">Policy Composer</a> — natural language memory rules</li>
+          <li><a href="https://fortsignal.com/dashboard" target="_blank" rel="noopener">FortSignal Dashboard</a> — agent passports &amp; delegations</li>
+          <li>CLI: <span class="mono">fortmemory agent add …</span> · <span class="mono">fortmemory reindex</span></li>
+          <li>Remote (optional): <span class="mono">fortmemory tailscale</span> · <span class="mono">fortmemory cloudflare</span></li>
+          <li>Docs: REMOTE-ACCESS.md · PRODUCT-SURFACE.md · SYSTEM-ARCHITECTURE.md</li>
+        </ul>
+        <p class="muted">Default agent write roots: <span class="mono">Scratch/**</span>, <span class="mono">Inbox/**</span>. Keep <span class="mono">Private/**</span> human-only.</p>
+        <p class="muted">Local by default (<span class="mono">127.0.0.1</span>). Tailscale = tailnet mesh. Cloudflare Tunnel = hostname/Access.</p>
+      </div>
+    </section>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const tokenKey = 'fortmemory_token';
+
+    function getToken() {
+      return ($('token').value || localStorage.getItem(tokenKey) || '').trim();
+    }
+    function authHeaders() {
+      const t = getToken();
+      return t ? { 'Authorization': 'Bearer ' + t } : {};
+    }
+
+    $('token').value = localStorage.getItem(tokenKey) || '';
+    $('save-token').onclick = () => {
+      localStorage.setItem(tokenKey, $('token').value.trim());
+      loadHome();
+      loadActivity();
+    };
+
+    document.querySelectorAll('nav button').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        ['home','search','activity','agents','settings'].forEach(v => {
+          $('view-' + v).classList.toggle('hidden', v !== btn.dataset.view);
+        });
+        if (btn.dataset.view === 'agents') loadAgents();
+      };
+    });
+
+    async function loadHealth() {
+      try {
+        const r = await fetch('/v1/health');
+        const j = await r.json();
+        $('vault-label').textContent = (j.vaultId || 'vault') + (j.ok ? ' · running' : '');
+        const files = j.index && j.index.files != null ? j.index.files : '—';
+        const fs = j.fortsignal && j.fortsignal.configured ? 'yes' : 'no';
+        $('health-card').innerHTML = `
+          <div><strong>Vault</strong> <span class="mono">${esc(j.vaultId || '')}</span></div>
+          <div class="muted mono" style="margin:0.35rem 0">${esc(j.vaultPath || '')}</div>
+          <div class="muted">Indexed files: <span class="mono">${files}</span>
+            · FortSignal key configured: <span class="mono">${fs}</span>
+            · version <span class="mono">${esc(j.version || '')}</span></div>
+          <p class="muted" style="margin:0.75rem 0 0">Agents talk to this host over HTTP. You edit notes in Obsidian on the same folder.</p>`;
+      } catch (e) {
+        $('health-card').innerHTML = `<div class="muted">Health failed: ${esc(String(e))}</div>`;
+      }
+    }
+
+    async function loadActivity(targetId) {
+      const el = $(targetId || 'activity-table');
+      if (!getToken()) {
+        el.innerHTML = '<span class="muted">Paste an <span class="mono">fm_</span> agent token above.</span>';
+        return;
+      }
+      try {
+        const r = await fetch('/v1/receipts?limit=40', { headers: authHeaders() });
+        if (r.status === 401) {
+          el.innerHTML = '<span class="muted">Unauthorized — check token.</span>';
+          return;
+        }
+        const j = await r.json();
+        const rows = j.records || [];
+        if (!rows.length) {
+          el.innerHTML = '<span class="muted">No receipts yet. Governed writes will show here.</span>';
+          return;
+        }
+        el.innerHTML = `<table>
+          <thead><tr><th>Time</th><th>Decision</th><th>Agent</th><th>Action</th><th>Path</th><th>signalId / reason</th></tr></thead>
+          <tbody>${rows.map(recRow).join('')}</tbody></table>`;
+      } catch (e) {
+        el.innerHTML = `<span class="muted">${esc(String(e))}</span>`;
+      }
+    }
+
+    function recRow(rec) {
+      const dec = (rec.decision || '').toLowerCase();
+      const badge = `<span class="badge ${dec === 'allow' ? 'allow' : 'deny'}">${esc(dec || '?')}</span>`;
+      const when = rec.verifiedAt ? new Date(rec.verifiedAt).toLocaleString() : '—';
+      const proof = dec === 'allow'
+        ? `<span class="mono">${esc(rec.signalId || '')}</span>`
+        : `<span class="muted">${esc(rec.reason || '')}</span>`;
+      return `<tr>
+        <td class="muted">${esc(when)}</td>
+        <td>${badge}</td>
+        <td class="mono">${esc(rec.agentId || '')}</td>
+        <td class="mono">${esc(rec.action || '')}</td>
+        <td class="mono">${esc(rec.path || '')}</td>
+        <td>${proof}</td>
+      </tr>`;
+    }
+
+    async function doSearch() {
+      const q = $('q').value.trim();
+      const box = $('search-results');
+      if (!q) return;
+      if (!getToken()) {
+        box.innerHTML = '<span class="muted">Token required for search.</span>';
+        return;
+      }
+      box.innerHTML = '<span class="muted">Searching…</span>';
+      try {
+        const r = await fetch('/v1/search', {
+          method: 'POST',
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q, topK: 12 }),
+        });
+        const j = await r.json();
+        if (!r.ok) {
+          box.innerHTML = `<span class="muted">${esc(j.error || r.statusText)}</span>`;
+          return;
+        }
+        const hits = j.results || [];
+        if (!hits.length) {
+          box.innerHTML = '<span class="muted">No hits.</span>';
+          return;
+        }
+        box.innerHTML = hits.map(h => `
+          <div class="hit">
+            <div class="path">${esc(h.path)}</div>
+            <div class="ex">${esc(h.excerpt || '')}</div>
+            <div class="muted mono">score ${Number(h.score || 0).toFixed(4)}${h.lastSignalId ? ' · ' + esc(h.lastSignalId) : ''}</div>
+          </div>`).join('');
+      } catch (e) {
+        box.innerHTML = `<span class="muted">${esc(String(e))}</span>`;
+      }
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[c]);
+    }
+
+    function loadHome() {
+      loadHealth();
+      loadActivity('home-activity');
+    }
+
+    async function loadAgents() {
+      const el = $('agents-table');
+      if (!getToken()) {
+        el.innerHTML = '<span class="muted">Paste fm_ token above.</span>';
+        return;
+      }
+      try {
+        const r = await fetch('/v1/agents', { headers: authHeaders() });
+        if (r.status === 401) {
+          el.innerHTML = '<span class="muted">Unauthorized.</span>';
+          return;
+        }
+        const j = await r.json();
+        const rows = j.agents || [];
+        if (!rows.length) {
+          el.innerHTML = '<span class="muted">No agents. CLI: fortmemory agent add &lt;id&gt; --key agent-key.json</span>';
+          return;
+        }
+        el.innerHTML = `<table>
+          <thead><tr><th>agentId</th><th>signing key</th></tr></thead>
+          <tbody>${rows.map(a => `<tr>
+            <td class="mono">${esc(a.agentId)}</td>
+            <td>${a.hasKey || a.keyPathSet ? 'configured' : '<span class="muted">missing</span>'}</td>
+          </tr>`).join('')}</tbody></table>
+          <p class="muted" style="margin-top:0.75rem">MCP: <span class="mono">fortmemory mcp --agent ${esc(rows[0].agentId)}</span></p>`;
+      } catch (e) {
+        el.innerHTML = `<span class="muted">${esc(String(e))}</span>`;
+      }
+    }
+
+    $('do-search').onclick = doSearch;
+    $('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+    $('refresh-activity').onclick = () => loadActivity();
+    $('refresh-agents').onclick = loadAgents;
+
+    loadHome();
+  </script>
+</body>
+</html>
