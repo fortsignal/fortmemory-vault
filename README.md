@@ -154,14 +154,19 @@ go install github.com/fortsignal/fortmemory-vault/cmd/fortmemory@latest
 fortmemory
 ```
 
-**First run:** shows default folder + id, asks `Create and start? [Y/n]`.  
-Enter or `y` → creates `~/Vaults/FortMemory` (id `personal`) and starts.  
-**Later:** just starts. No questions.
+**First run:** creates `~/Vaults/FortMemory` and asks once:
 
-Custom vault:
+```text
+Vault id [personal]:
+```
+
+Enter → `personal`. Or type your own (`jeff`, `work`, …) then Enter. Starts right after.  
+**Later:** just `fortmemory` — no questions.
+
+Optional (custom folder):
 
 ```bash
-fortmemory init ~/Vaults/MyStuff --id test
+fortmemory init ~/Vaults/MyStuff --id work
 fortmemory
 ```
 

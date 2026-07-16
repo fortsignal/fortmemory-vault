@@ -19,8 +19,7 @@ func isInteractive() bool {
 }
 
 // resolveServeConfig finds a vault for start/serve.
-// First run (interactive): one standard [Y/n] confirm with defaults.
-// Custom path/id: use `fortmemory init`.
+// First run (interactive): default folder + ask for id (default personal).
 func resolveServeConfig(explicit string) (string, error) {
 	if path, err := config.Discover(explicit); err == nil {
 		_ = config.SetActive(path)
@@ -47,44 +46,42 @@ func resolveServeConfig(explicit string) (string, error) {
 		return cfgPath, nil
 	}
 
-	return runFirstTimeConfirm(def, defaultID)
+	return runFirstTimeSetup(def, defaultID)
 }
 
-// runFirstTimeConfirm is the normal CLI first-run: show defaults, Y/n once.
-func runFirstTimeConfirm(vaultPath, vaultID string) (string, error) {
+// runFirstTimeSetup: standard defaults, one simple id prompt.
+func runFirstTimeSetup(vaultPath, defaultID string) (string, error) {
 	fmt.Println()
-	fmt.Println("No vault configured.")
+	fmt.Println("No vault yet — quick setup.")
 	fmt.Println()
 	fmt.Printf("  Folder: %s\n", vaultPath)
-	fmt.Printf("  Id:     %s\n", vaultID)
 	fmt.Println()
-	fmt.Println("  (Custom path/id: fortmemory init ~/path --id myid)")
-	fmt.Println()
-	fmt.Print("Create and start? [Y/n] ")
+	fmt.Printf("Vault id [%s]: ", defaultID)
+	fmt.Print("") // keep prompt clean
 
 	r := bufio.NewReader(os.Stdin)
 	line, err := r.ReadString('\n')
 	if err != nil && strings.TrimSpace(line) == "" {
 		return "", err
 	}
-	ans := strings.ToLower(strings.TrimSpace(line))
-	// Standard: empty, y, yes → accept. n/no → abort.
-	if ans == "n" || ans == "no" {
-		return "", fmt.Errorf("aborted — run: fortmemory init ~/Vaults/MyVault --id personal")
+	id := sanitizeVaultID(strings.TrimSpace(line))
+	if id == "" || id == "y" || id == "yes" {
+		id = defaultID
 	}
-	// anything else including y/yes/empty → proceed
 
-	cfgPath, created, err := config.EnsureVault(vaultPath, vaultID)
+	fmt.Println()
+	fmt.Printf("Creating vault id=%s …\n", id)
+
+	cfgPath, created, err := config.EnsureVault(vaultPath, id)
 	if err != nil {
 		return "", err
 	}
 	if created {
-		fmt.Printf("Created vault %s (id=%s)\n\n", vaultPath, vaultID)
+		fmt.Printf("Ready. FortSignal write paths look like: %s/Scratch/*\n\n", id)
 	}
 	return cfgPath, nil
 }
 
-// expandHome is used by init helpers if needed later.
 func expandHome(p string) (string, error) {
 	p = strings.TrimSpace(p)
 	if p == "" {

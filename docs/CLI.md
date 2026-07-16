@@ -13,8 +13,8 @@ fortmemory start
 
 **Just works.**
 
-- **First run:** one `[Y/n]` confirm with defaults (`~/Vaults/FortMemory`, id `personal`).
-- **Custom path/id:** `fortmemory init ~/path --id myid` (no freeform prompts on start).
+- **First run:** folder defaults to `~/Vaults/FortMemory`; one prompt for vault id (default `personal` — type your own if you want).
+- **Custom folder:** `fortmemory init ~/path --id myid`.
 - **Later runs:** reopens last vault — no prompts.
 - **Non-interactive:** auto-creates defaults (`FORTMEMORY_YES=1` or non-TTY).
 
