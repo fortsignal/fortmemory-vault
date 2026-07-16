@@ -173,8 +173,8 @@ func runDoctor(args []string) error {
 			} else if res.Decision == "allow" {
 				pass("write-probe", "allow signalId="+res.SignalID+" path="+res.Path)
 			} else {
-				fail("write-probe", "deny reason="+res.Reason+
-					" (need action memory.write, recipients "+cfg.VaultID+"/Scratch/*, active delegation)")
+				hint := denyHint(res.Reason, cfg.VaultID, signer.AgentID())
+				fail("write-probe", "deny reason="+res.Reason+hint)
 			}
 		} else {
 			// challenge start + verify without writing vault
@@ -192,7 +192,7 @@ func runDoctor(args []string) error {
 				fail("challenge-start", err.Error())
 			} else if start.Decision == "deny" {
 				fail("challenge-start", "deny reason="+start.Reason+
-					" — fix policy/delegation for agent "+signer.AgentID())
+					denyHint(start.Reason, cfg.VaultID, signer.AgentID()))
 			} else if start.Challenge == "" {
 				fail("challenge-start", "empty challenge")
 			} else {
@@ -225,7 +225,7 @@ func runDoctor(args []string) error {
 	if !ok {
 		return fmt.Errorf("doctor found failures — see docs/INTEGRATION.md")
 	}
-	fmt.Println("\nIntegration looks ready. Next: fortmemory serve")
+	fmt.Println("\nIntegration looks ready. Day to day: fortmemory")
 	return nil
 }
 
@@ -241,9 +241,26 @@ func printDoctorSummary(ok bool) {
 func printDoctorNext() {
 	fmt.Println()
 	fmt.Println("Setup checklist: docs/INTEGRATION.md")
-	fmt.Println("  1. export FORTSIGNAL_API_KEY=…")
-	fmt.Println("  2. Dashboard: passport + policy + delegation")
-	fmt.Println("  3. fortmemory agent add <id> --key agent-key.json")
-	fmt.Println("  4. fortmemory doctor --key agent-key.json")
-	fmt.Println("  5. fortmemory doctor --key agent-key.json --write-probe")
+	fmt.Println("  1. export FORTSIGNAL_API_KEY=fs_live_…  (your tenant key)")
+	fmt.Println("  2. FortSignal: agent + policy memory.write + {vaultId}/Scratch/* + delegation")
+	fmt.Println("  3. fortmemory agent add <agentId> --key /path/to/agent-key.json")
+	fmt.Println("  4. fortmemory doctor --key /path/to/agent-key.json --write-probe")
+	fmt.Println("  vaultId is the id you chose at first run (see fortmemory home / config.toml)")
+}
+
+// denyHint explains common FortSignal denials without hardcoding a specific user.
+func denyHint(reason, vaultID, agentID string) string {
+	switch reason {
+	case "amount_exceeds_policy":
+		return " — amount is file size in bytes; set policy max to 65536 or empty (not 0)"
+	case "action_not_allowed":
+		return " — policy allowedActions must include memory.write for agent " + agentID
+	case "recipient_not_allowed":
+		return " — policy allowedRecipients should include " + vaultID + "/Scratch/*"
+	case "delegation_invalid":
+		return " — approve/renew delegation for agent " + agentID + " in FortSignal dashboard"
+	default:
+		return " — check policy/delegation for agent " + agentID +
+			" (memory.write, recipients " + vaultID + "/Scratch/*, max amount)"
+	}
 }

@@ -39,42 +39,30 @@ See **[STRATEGY-LOCK.md](./STRATEGY-LOCK.md)** — freeze high-level decisions; 
 cd ~/projects/fortmemory-vault
 go build -o bin/fortmemory ./cmd/fortmemory
 
-# 1. Init vault
-./bin/fortmemory init ~/Vaults/Personal --id personal
+# 1. Start (first run: choose YOUR vault id)
+fortmemory
 
-# 2. FortSignal setup (dashboard)
-#    - Register agent passport, download agent-key.json
-#    - Policy allowedActions includes memory.write
-#    - allowedRecipients e.g. personal/Scratch/*
-#    - Approve delegation (passkey)
+# 2. FortSignal (dashboard) — use YOUR vault id in recipients
+#    - Agent passport → download agent-key.json
+#    - Policy: memory.write, max 65536, recipients {vaultId}/Scratch/*
+#    - Passkey-approve delegation
 
-export FORTSIGNAL_API_KEY=fs_live_...
+export FORTSIGNAL_API_KEY=fs_live_...   # YOUR tenant key
 
 # 3. Local dashboard token (not FortSignal)
 fortmemory token
-# paste fm_… into dashboard Bearer field
 
-# 4. Optional: FortSignal agent for governed writes
-fortmemory agent add research-01 \
-  --key ~/path/to/agent-key.json
+# 4. Wire agent signing key
+fortmemory agent add <agentId> --key /path/to/agent-key.json
 
-# 5. Start (or already running)
-fortmemory
+# 5. Prove integration
+fortmemory doctor --key /path/to/agent-key.json --write-probe
 
-# 6. API
-export TOK=fm_…   # from fortmemory token
+# 6. API (TOK from fortmemory token)
+export TOK=fm_…
 curl -s http://127.0.0.1:7432/v1/health
 curl -s -H "Authorization: Bearer $TOK" \
   "http://127.0.0.1:7432/v1/read?path=Scratch/hello.md"
-curl -s -H "Authorization: Bearer $TOK" -H 'Content-Type: application/json' \
-  -d '{"q":"hello","topK":5}' http://127.0.0.1:7432/v1/search
-
-# 6. Governed write (CLI or HTTP POST /v1/write)
-./bin/fortmemory write \
-  --config ~/Vaults/Personal/.fortmemory/config.toml \
-  --key ~/path/to/agent-key.json \
-  --path Scratch/hello.md \
-  --body $'# Hello from FortMemory\n'
 ```
 
 ## Tests

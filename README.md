@@ -160,8 +160,10 @@ fortmemory
 Vault id [personal]:
 ```
 
-Enter → `personal`. Or type your own (`jeff`, `work`, …) then Enter. Starts right after.  
+Enter → `personal`. Or type your own id (`work`, `team`, …) then Enter. Starts right after.  
 **Later:** just `fortmemory` — no questions.
+
+That **vault id** is yours alone — use the **same** id in FortSignal recipients: `{vaultId}/Scratch/*`.
 
 Optional (custom folder):
 
@@ -188,19 +190,20 @@ fortmemory token
 
 ### Governed writes (optional second step)
 
+Works for **any** user — plug in *your* API key, agent id, key path, and vault id:
+
 ```bash
-# FortSignal dashboard: agent passport + policy memory.write + recipients test/Scratch/*
-# + passkey-approve delegation
+export FORTSIGNAL_API_KEY=fs_live_...   # your FortSignal tenant key
 
-export FORTSIGNAL_API_KEY=fs_live_...
+# Dashboard: create agent → download key JSON
+# Policy: memory.write · max 65536 · recipients {yourVaultId}/Scratch/*
+# Delegate + passkey approve
 
-fortmemory agent add research-01 \
-  --key ~/path/to/agent-key.json
-
-fortmemory doctor --key ~/path/to/agent-key.json --write-probe
+fortmemory agent add <agentId> --key /path/to/agent-key.json
+fortmemory doctor --key /path/to/agent-key.json --write-probe
 ```
 
-Dashboard search token: `fortmemory token` (local `fm_…`, not FortSignal).
+Local dashboard token (not FortSignal): `fortmemory token` → paste `fm_…` in UI.
 
 ### Example API calls
 

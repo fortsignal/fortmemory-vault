@@ -190,10 +190,11 @@ allow_ungated_reads = true
 ## Operator loop (dogfood)
 
 ```bash
-fortmemory                 # first run: vault id, then start
+fortmemory                 # first run: pick YOUR vault id, then start
 fortmemory token           # paste fm_… into dashboard Bearer
-# optional writes:
+# optional governed writes (YOUR FortSignal key + agent):
 export FORTSIGNAL_API_KEY=fs_live_...
-fortmemory agent add research-01 --key ~/agent-key.json
-fortmemory doctor --key ~/agent-key.json --write-probe
+fortmemory agent add <agentId> --key /path/to/agent-key.json
+fortmemory doctor --key /path/to/agent-key.json --write-probe
+# Policy recipients must be {yourVaultId}/Scratch/* — same id as first-run vault id
 ```
