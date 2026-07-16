@@ -31,6 +31,17 @@ Stop with **Ctrl+C**. Open http://127.0.0.1:7432/
 
 ## Commands
 
+### `fortmemory token`
+
+Mint a **local** dashboard/API token (`fm_…`). Not a FortSignal `fs_live_…` key.
+
+```bash
+fortmemory token
+# paste into Bearer at http://127.0.0.1:7432/ → Save
+```
+
+Shown once. Run again to rotate. Optional: `--name dashboard` (default).
+
 ### `fortmemory version`
 
 Print version.

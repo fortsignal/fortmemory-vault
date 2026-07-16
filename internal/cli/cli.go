@@ -75,6 +75,8 @@ func Execute(args []string) error {
 		return runMCP(args[1:])
 	case "doctor":
 		return runDoctor(args[1:])
+	case "token":
+		return runToken(args[1:])
 	default:
 		return fmt.Errorf("unknown command %q — try: fortmemory help", args[0])
 	}
@@ -86,7 +88,7 @@ FortMemory — verifiable local agent memory
 
 Usage:
   fortmemory                              start server (default)
-  fortmemory serve [--config path]        same as above
+  fortmemory token                        print dashboard API token (fm_…)
   fortmemory init [vault-path] [--id personal]
   fortmemory write --path Scratch/note.md --body "..." [--key agent-key.json]
   fortmemory delete --path Scratch/note.md [--key agent-key.json]
@@ -97,17 +99,54 @@ Usage:
   fortmemory version
   fortmemory help
 
-Also: cloudflare, tailscale, tunnel (remote access helpers)
+Also: serve, start, cloudflare, tailscale, tunnel
 
 Environment:
   FORTSIGNAL_API_KEY   FortSignal API key (required for write)
   FORTMEMORY_CONFIG    Path to .fortmemory/config.toml
 
 First time:
-  fortmemory init ~/Vaults/MyVault --id personal
-  fortmemory --config ~/Vaults/MyVault/.fortmemory/config.toml
-  open http://127.0.0.1:7432/
+  fortmemory                  # setup + start → http://127.0.0.1:7432/
+  fortmemory token            # paste fm_… into dashboard Bearer field
 `))
+}
+
+// runToken mints/rotates a local dashboard token (not a FortSignal key).
+func runToken(args []string) error {
+	fs := flag.NewFlagSet("token", flag.ContinueOnError)
+	cfgPath := fs.String("config", "", "path to config.toml")
+	name := fs.String("name", "dashboard", "local agent name for this token")
+	fs.SetOutput(os.Stderr)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	discovered, err := config.Discover(*cfgPath)
+	if err != nil {
+		// No vault yet — create defaults non-interactively for scripts,
+		// or tell the user to start fortmemory once first.
+		return fmt.Errorf("%w\n\nRun fortmemory once first to create a vault, then: fortmemory token", err)
+	}
+	cfg, err := config.Load(discovered)
+	if err != nil {
+		return err
+	}
+	store, err := agent.OpenFileStore(config.AgentsFile(cfg.VaultPath))
+	if err != nil {
+		return err
+	}
+	tok, err := store.Register(context.Background(), *name, "")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Local dashboard token (not a FortSignal key)")
+	fmt.Println("Paste into the Bearer field at http://127.0.0.1:7432/ then Save.")
+	fmt.Println()
+	fmt.Println(tok)
+	fmt.Println()
+	fmt.Println("Shown once — run fortmemory token again to make a new one.")
+	return nil
 }
 
 func runInit(args []string) error {

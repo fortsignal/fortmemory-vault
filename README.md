@@ -172,6 +172,13 @@ fortmemory
 
 Open **http://127.0.0.1:7432/**. Stop with **Ctrl+C**.
 
+**Dashboard search** needs a local token (not your FortSignal key):
+
+```bash
+fortmemory token
+# paste the fm_… value into Bearer → Save
+```
+
 | Surface | URL |
 |---------|-----|
 | Dashboard | http://127.0.0.1:7432/ |
