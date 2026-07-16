@@ -9,7 +9,7 @@
 | fortsignal.Client | **Done** | start/verify, 403 deny as decision |
 | memory.Service.Write | **Done** | local policy → FS challenge → sign → verify → write |
 | CLI `write` | **Done** | gated write without HTTP server |
-| agent tokens | **Done** | `fortmemory agent add/list`, `.fortmemory/agents.json` |
+| agent tokens | **Done** | `fortmemory token`, `agent add/list`, `.fortmemory/agents.json` |
 | HTTP `serve` | **Done** | health, read, write, delete, search, receipts on 127.0.0.1 |
 | FTS index + reindex | **Done** | SQLite FTS5, `fortmemory reindex` |
 | Vault watcher | **Done** | fsnotify → debounced reindex (Obsidian edits) |
@@ -50,17 +50,19 @@ go build -o bin/fortmemory ./cmd/fortmemory
 
 export FORTSIGNAL_API_KEY=fs_live_...
 
-# 3. Register local API agent (prints bearer token once)
-./bin/fortmemory agent add research-01 \
-  --config ~/Vaults/Personal/.fortmemory/config.toml \
+# 3. Local dashboard token (not FortSignal)
+fortmemory token
+# paste fm_… into dashboard Bearer field
+
+# 4. Optional: FortSignal agent for governed writes
+fortmemory agent add research-01 \
   --key ~/path/to/agent-key.json
 
-# 4. Index + serve
-./bin/fortmemory reindex --config ~/Vaults/Personal/.fortmemory/config.toml
-./bin/fortmemory serve --config ~/Vaults/Personal/.fortmemory/config.toml
+# 5. Start (or already running)
+fortmemory
 
-# 5. API
-export TOK=fm_…
+# 6. API
+export TOK=fm_…   # from fortmemory token
 curl -s http://127.0.0.1:7432/v1/health
 curl -s -H "Authorization: Bearer $TOK" \
   "http://127.0.0.1:7432/v1/read?path=Scratch/hello.md"

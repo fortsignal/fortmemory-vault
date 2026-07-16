@@ -74,10 +74,12 @@ Without an active delegation, `challenge/start` returns **deny** (`delegation_in
 ### 5. FortMemory — local agent
 
 ```bash
+# Local dashboard search token
+fortmemory token
+
+# Optional: wire FortSignal agent key for governed writes
 fortmemory agent add research-01 \
-  --config ~/Vaults/Personal/.fortmemory/config.toml \
   --key ~/Downloads/agent-key.json
-# save fm_… token once
 ```
 
 ### 6. Verify integration

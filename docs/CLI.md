@@ -110,13 +110,13 @@ fortmemory reindex
 fortmemory reindex --full
 ```
 
-### `fortmemory agent add <agentId>` (Phase 1.5)
+### `fortmemory agent add <agentId>`
 
-Issue a local API token mapped to FortSignal `agentId`.
+Wire a FortSignal agent **signing key** for governed writes (optional).  
+For dashboard search only, use **`fortmemory token`** instead.
 
 ```bash
-fortmemory agent add research-01
-# prints token once
+fortmemory agent add research-01 --key ~/agent-key.json
 ```
 
 ### `fortmemory cloudflare` — Cloudflare Tunnel plugin (primary)
@@ -190,11 +190,10 @@ allow_ungated_reads = true
 ## Operator loop (dogfood)
 
 ```bash
+fortmemory                 # first run: vault id, then start
+fortmemory token           # paste fm_… into dashboard Bearer
+# optional writes:
 export FORTSIGNAL_API_KEY=fs_live_...
-fortmemory init ~/Vaults/Personal
-# configure agent passport + delegation in FortSignal dashboard
-fortmemory agent add research-01
-fortmemory serve
-# other terminal:
-curl -s localhost:7432/v1/health | jq
+fortmemory agent add research-01 --key ~/agent-key.json
+fortmemory doctor --key ~/agent-key.json --write-probe
 ```

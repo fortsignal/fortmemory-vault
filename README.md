@@ -98,7 +98,7 @@ Open-core details: [docs/OPEN-CORE.md](./docs/OPEN-CORE.md)
 - **Optional hybrid embeddings** — Ollama (`nomic-embed-text`, etc.)
 - **Vault watcher** — reindex on external edits (e.g. Obsidian)
 - **Operator dashboard** — Home · Search · Activity · Agents · Settings
-- **Agent tokens** — local `fm_…` bearer auth for the HTTP API
+- **Local tokens** — `fortmemory token` mints `fm_…` bearer auth for the HTTP API / dashboard
 
 ### Governance (via FortSignal)
 - **`memory.write` / `memory.delete`** gated by challenge → Ed25519 sign → verify  
@@ -195,13 +195,12 @@ fortmemory token
 export FORTSIGNAL_API_KEY=fs_live_...
 
 fortmemory agent add research-01 \
-  --config ~/Vaults/FortMemory-Test/.fortmemory/config.toml \
   --key ~/path/to/agent-key.json
 
 fortmemory doctor --key ~/path/to/agent-key.json --write-probe
 ```
 
-Paste the `fm_…` token (from `agent add`) in the dashboard for search & activity.
+Dashboard search token: `fortmemory token` (local `fm_…`, not FortSignal).
 
 ### Example API calls
 
