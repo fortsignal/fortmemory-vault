@@ -1,42 +1,50 @@
+<div align="center">
+
 # FortMemory
 
-### Local-first agentic memory for Markdown vaults — with cryptographic proof on every write
+**Local-first agentic memory for Markdown vaults — with cryptographic proof on every write**
 
-<p align="center">
-  <strong>Memory you can prove.</strong><br/>
-  <em>Obsidian-compatible files · FortSignal-governed mutates · HTTP + MCP for agents</em>
-</p>
+Memory you can prove.
 
-<p align="center">
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge" alt="License: Apache 2.0" /></a>
-  <a href="https://go.dev/"><img src="https://img.shields.io/badge/Go-1.23+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go 1.23+" /></a>
-  <a href="https://fortsignal.com"><img src="https://img.shields.io/badge/FortSignal-Governance-0B0F14?style=for-the-badge" alt="FortSignal" /></a>
-  <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-Compatible-7C3AED?style=for-the-badge&logo=obsidian&logoColor=white" alt="Obsidian Compatible" /></a>
-</p>
+Obsidian-compatible files · FortSignal-governed mutates · HTTP + MCP for agents
 
-<p align="center">
-  <a href="https://github.com/fortsignal/fortmemory-vault/stargazers"><img src="https://img.shields.io/github/stars/fortsignal/fortmemory-vault?style=flat-square&logo=github" alt="GitHub stars" /></a>
-  <a href="https://github.com/fortsignal/fortmemory-vault/network/members"><img src="https://img.shields.io/github/forks/fortsignal/fortmemory-vault?style=flat-square&logo=github" alt="GitHub forks" /></a>
-  <a href="https://github.com/fortsignal/fortmemory-vault/issues"><img src="https://img.shields.io/github/issues/fortsignal/fortmemory-vault?style=flat-square" alt="GitHub issues" /></a>
-  <a href="https://github.com/fortsignal/fortmemory-vault/commits/main"><img src="https://img.shields.io/github/last-commit/fortsignal/fortmemory-vault?style=flat-square" alt="Last commit" /></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/fortsignal/fortmemory-vault?style=flat-square" alt="License" /></a>
-  <img src="https://img.shields.io/badge/platform-linux%20%7C%20macOS%20%7C%20windows-lightgrey?style=flat-square" alt="Platforms" />
-  <img src="https://img.shields.io/badge/local--first-yes-success?style=flat-square" alt="Local-first" />
-  <img src="https://img.shields.io/badge/MCP-supported-blueviolet?style=flat-square" alt="MCP" />
-  <img src="https://img.shields.io/badge/status-mvp-orange?style=flat-square" alt="Status MVP" />
-</p>
+<br/>
 
-<p align="center">
-  <a href="#quick-start">Quick start</a> ·
-  <a href="#features">Features</a> ·
-  <a href="#architecture">Architecture</a> ·
-  <a href="#http-api">HTTP API</a> ·
-  <a href="#mcp">MCP</a> ·
-  <a href="#remote-access">Remote access</a> ·
-  <a href="#documentation">Docs</a> ·
-  <a href="#security">Security</a> ·
-  <a href="#license">License</a>
-</p>
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](./LICENSE)
+[![Go](https://img.shields.io/badge/go-1.23+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
+[![FortSignal](https://img.shields.io/badge/FortSignal-governance-111827?style=flat-square)](https://fortsignal.com)
+[![Obsidian](https://img.shields.io/badge/Obsidian-compatible-7C3AED?style=flat-square&logo=obsidian&logoColor=white)](https://obsidian.md)
+[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS%20%7C%20windows-6b7280?style=flat-square)](#quick-start)
+[![Local-first](https://img.shields.io/badge/local--first-yes-22c55e?style=flat-square)](#features)
+[![MCP](https://img.shields.io/badge/MCP-supported-8b5cf6?style=flat-square)](#mcp)
+[![Status](https://img.shields.io/badge/status-MVP-f59e0b?style=flat-square)](#status)
+
+[![Stars](https://img.shields.io/github/stars/fortsignal/fortmemory-vault?style=flat-square&logo=github)](https://github.com/fortsignal/fortmemory-vault/stargazers)
+[![Forks](https://img.shields.io/github/forks/fortsignal/fortmemory-vault?style=flat-square&logo=github)](https://github.com/fortsignal/fortmemory-vault/network/members)
+[![Issues](https://img.shields.io/github/issues/fortsignal/fortmemory-vault?style=flat-square)](https://github.com/fortsignal/fortmemory-vault/issues)
+[![Last commit](https://img.shields.io/github/last-commit/fortsignal/fortmemory-vault?style=flat-square)](https://github.com/fortsignal/fortmemory-vault/commits/main)
+
+<br/>
+
+[Quick start](#quick-start)
+&nbsp;·&nbsp;
+[Features](#features)
+&nbsp;·&nbsp;
+[Architecture](#architecture)
+&nbsp;·&nbsp;
+[HTTP API](#http-api)
+&nbsp;·&nbsp;
+[MCP](#mcp)
+&nbsp;·&nbsp;
+[Remote access](#remote-access)
+&nbsp;·&nbsp;
+[Docs](#documentation)
+&nbsp;·&nbsp;
+[Security](#security)
+&nbsp;·&nbsp;
+[License](#license)
+
+</div>
 
 ---
 
