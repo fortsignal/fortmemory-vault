@@ -33,10 +33,17 @@ import (
 var Version = "0.0.0-dev"
 
 // Execute runs the CLI with argv (excluding program name).
+//
+// Bare `fortmemory` (no args) starts the local server — same as `fortmemory serve`.
 func Execute(args []string) error {
+	// Default: start the server so users can just type `fortmemory`.
 	if len(args) == 0 {
-		printUsage()
-		return fmt.Errorf("usage: fortmemory <command>")
+		return runServe(nil)
+	}
+	// `fortmemory --config path` also starts the server.
+	if strings.HasPrefix(args[0], "-") && args[0] != "-v" && args[0] != "--version" &&
+		args[0] != "-h" && args[0] != "--help" {
+		return runServe(args)
 	}
 
 	switch args[0] {
@@ -52,7 +59,7 @@ func Execute(args []string) error {
 		return runWrite(args[1:])
 	case "delete":
 		return runDelete(args[1:])
-	case "serve":
+	case "serve", "start":
 		return runServe(args[1:])
 	case "reindex":
 		return runReindex(args[1:])
@@ -69,7 +76,7 @@ func Execute(args []string) error {
 	case "doctor":
 		return runDoctor(args[1:])
 	default:
-		return fmt.Errorf("unknown command %q", args[0])
+		return fmt.Errorf("unknown command %q — try: fortmemory help", args[0])
 	}
 }
 
@@ -78,39 +85,47 @@ func printUsage() {
 FortMemory — verifiable local agent memory
 
 Usage:
-  fortmemory version
-  fortmemory init [vault-path] [--id personal] [--force]
-  fortmemory write --path Scratch/note.md --body "..." [--config path] [--key agent-key.json]
-  fortmemory write --path Scratch/note.md --file ./note.md [--mode overwrite]
-  fortmemory delete --path Scratch/note.md [--config path] [--key agent-key.json]
-  fortmemory serve [--config path]
-  fortmemory reindex
-  fortmemory agent add <agentId>
-  fortmemory mcp --agent <id> [--config path] [--key path]
+  fortmemory                              start server (default)
+  fortmemory serve [--config path]        same as above
+  fortmemory init [vault-path] [--id personal]
+  fortmemory write --path Scratch/note.md --body "..." [--key agent-key.json]
+  fortmemory delete --path Scratch/note.md [--key agent-key.json]
   fortmemory doctor [--key agent-key.json] [--write-probe]
-  fortmemory cloudflare install|check|config|quick|run
-  fortmemory tailscale [check|print-serve]
-  fortmemory tunnel cloudflare|tailscale … (aliases)
+  fortmemory agent add <agentId> --key agent-key.json
+  fortmemory reindex
+  fortmemory mcp --agent <id>
+  fortmemory version
+  fortmemory help
 
-License: Apache-2.0 (open-core — see docs/OPEN-CORE.md)
+Also: cloudflare, tailscale, tunnel (remote access helpers)
 
 Environment:
   FORTSIGNAL_API_KEY   FortSignal API key (required for write)
   FORTMEMORY_CONFIG    Path to .fortmemory/config.toml
 
-Docs: docs/INTEGRATION.md  docs/CLI.md  docs/OPEN-CORE.md
+First time:
+  fortmemory init ~/Vaults/MyVault --id personal
+  fortmemory --config ~/Vaults/MyVault/.fortmemory/config.toml
+  open http://127.0.0.1:7432/
 `))
 }
 
 func runInit(args []string) error {
+	// Support both:
+	//   fortmemory init ~/Vaults/X --id test
+	//   fortmemory init --id test ~/Vaults/X
+	// (Go flag stops at the first non-flag, so peel the path out first.)
+	vaultPath, flagArgs := peelPositionalID(args)
 	fs := flag.NewFlagSet("init", flag.ContinueOnError)
 	id := fs.String("id", "personal", "vault_id")
 	force := fs.Bool("force", false, "overwrite existing config")
 	fs.SetOutput(os.Stderr)
-	if err := fs.Parse(args); err != nil {
+	if err := fs.Parse(flagArgs); err != nil {
 		return err
 	}
-	vaultPath := fs.Arg(0)
+	if vaultPath == "" {
+		vaultPath = fs.Arg(0)
+	}
 	if vaultPath == "" {
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -149,15 +164,18 @@ func runInit(args []string) error {
 		_ = f.Close()
 	}
 
+	if err := config.SetActive(cfgPath); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: could not set as default vault: %v\n", err)
+	}
+
 	fmt.Printf("Initialized FortMemory vault\n")
 	fmt.Printf("  vault:  %s\n", abs)
 	fmt.Printf("  id:     %s\n", *id)
 	fmt.Printf("  config: %s\n", cfgPath)
-	fmt.Printf("\nNext:\n")
-	fmt.Printf("  1. export FORTSIGNAL_API_KEY=fs_live_...\n")
-	fmt.Printf("  2. Register agent + approve delegation in FortSignal dashboard\n")
-	fmt.Printf("     Policy must allow action memory.write and recipients like %s/Scratch/*\n", *id)
-	fmt.Printf("  3. fortmemory write --config %s --key /path/to/agent-key.json --path Scratch/hello.md --body \"# hi\"\n", cfgPath)
+	fmt.Printf("\nNext — just type:\n")
+	fmt.Printf("  fortmemory\n")
+	fmt.Printf("Then open http://127.0.0.1:7432/\n")
+	fmt.Printf("(Policy recipients for agent writes: %s/Scratch/*)\n", *id)
 	return nil
 }
 
@@ -347,14 +365,25 @@ func runServe(args []string) error {
 		return err
 	}
 
-	rt, err := app.Open(*cfgPath, true)
+	// Bare `fortmemory`: use existing vault, or first-run wizard (path + id).
+	resolved, err := resolveServeConfig(*cfgPath)
+	if err != nil {
+		return err
+	}
+	_ = config.SetActive(resolved)
+
+	// API key optional for serve — reads/dashboard work without FortSignal.
+	rt, err := app.Open(resolved, false)
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
 
+	if _, err := rt.Cfg.APIKey(); err != nil {
+		fmt.Fprintln(os.Stderr, "note: FORTSIGNAL_API_KEY not set — reads work; agent writes need it later")
+	}
 	if len(rt.Signers) == 0 {
-		fmt.Fprintln(os.Stderr, "warning: no agent signing keys loaded — HTTP write will fail until you run:")
+		fmt.Fprintln(os.Stderr, "note: agent writes need a key later:")
 		fmt.Fprintln(os.Stderr, "  fortmemory agent add <agentId> --key /path/to/agent-key.json")
 	}
 
@@ -379,6 +408,7 @@ func runServe(args []string) error {
 	fmt.Fprintf(os.Stderr, "FortMemory serving vault %q on http://%s:%d\n",
 		rt.Cfg.VaultID, rt.Cfg.Bind, rt.Cfg.Port)
 	fmt.Fprintf(os.Stderr, "Dashboard: http://%s:%d/\n", rt.Cfg.Bind, rt.Cfg.Port)
+	fmt.Fprintf(os.Stderr, "Stop with Ctrl+C\n")
 
 	errCh := make(chan error, 1)
 	go func() {

@@ -139,40 +139,57 @@ cd fortmemory-vault
 make test && make build
 # → ./bin/fortmemory
 
-# After main is on GitHub:
+# Optional: run as `fortmemory` from anywhere
+mkdir -p ~/.local/bin
+ln -sfn "$(pwd)/bin/fortmemory" ~/.local/bin/fortmemory
+# ensure ~/.local/bin is on your PATH
+
+# Or after main is on GitHub:
 go install github.com/fortsignal/fortmemory-vault/cmd/fortmemory@latest
 ```
 
-### 60-second local path
+### How to run (simple)
 
 ```bash
-# 1. Initialize vault metadata
-./bin/fortmemory init ~/Vaults/Personal --id personal
-
-# 2. FortSignal (dashboard)
-#    - Create agent passport → download agent-key.json
-#    - Policy: memory.write (+ memory.delete if needed)
-#      recipients: personal/Scratch/*, personal/Inbox/*
-#    - Passkey-approve delegation
-
-export FORTSIGNAL_API_KEY=fs_live_...
-
-# 3. Local API agent (prints fm_ token once)
-./bin/fortmemory agent add research-01 \
-  --config ~/Vaults/Personal/.fortmemory/config.toml \
-  --key ~/path/to/agent-key.json
-
-# 4. Index + serve
-./bin/fortmemory reindex --config ~/Vaults/Personal/.fortmemory/config.toml
-./bin/fortmemory serve   --config ~/Vaults/Personal/.fortmemory/config.toml
+fortmemory
 ```
+
+**First run:** shows default folder + id, asks `Create and start? [Y/n]`.  
+Enter or `y` → creates `~/Vaults/FortMemory` (id `personal`) and starts.  
+**Later:** just starts. No questions.
+
+Custom vault:
+
+```bash
+fortmemory init ~/Vaults/MyStuff --id test
+fortmemory
+```
+
+Open **http://127.0.0.1:7432/**. Stop with **Ctrl+C**.
 
 | Surface | URL |
 |---------|-----|
 | Dashboard | http://127.0.0.1:7432/ |
 | Health | http://127.0.0.1:7432/v1/health |
 
-Paste the `fm_…` token in the dashboard for search & activity.
+`fortmemory serve` and `fortmemory start` do the same thing as bare `fortmemory`.
+
+### Governed writes (optional second step)
+
+```bash
+# FortSignal dashboard: agent passport + policy memory.write + recipients test/Scratch/*
+# + passkey-approve delegation
+
+export FORTSIGNAL_API_KEY=fs_live_...
+
+fortmemory agent add research-01 \
+  --config ~/Vaults/FortMemory-Test/.fortmemory/config.toml \
+  --key ~/path/to/agent-key.json
+
+fortmemory doctor --key ~/path/to/agent-key.json --write-probe
+```
+
+Paste the `fm_…` token (from `agent add`) in the dashboard for search & activity.
 
 ### Example API calls
 
@@ -191,12 +208,13 @@ curl -sS -H "Authorization: Bearer fm_…" \
 ### CLI governed write
 
 ```bash
-./bin/fortmemory write \
-  --config ~/Vaults/Personal/.fortmemory/config.toml \
+fortmemory write \
   --key ~/path/to/agent-key.json \
   --path Scratch/hello.md \
   --body $'# Hello from FortMemory\n\nGoverned write.\n'
 ```
+
+(Uses `FORTMEMORY_CONFIG` or `--config` if set.)
 
 On allow, the note is written and annotated with `last_signal_id` (post-allow metadata; the FortSignal hash covers the agent payload).
 

@@ -64,6 +64,41 @@ func TestChallengeStartDeny403(t *testing.T) {
 	}
 }
 
+func TestPingAcceptsPolicyDeny(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/challenge/start" {
+			t.Fatalf("path %s", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer test-key" {
+			t.Fatalf("auth")
+		}
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"decision": "deny",
+			"reason":   "delegation_invalid",
+		})
+	}))
+	defer srv.Close()
+
+	c := New("test-key", srv.URL)
+	if err := c.Ping(context.Background()); err != nil {
+		t.Fatalf("policy deny should count as ping success: %v", err)
+	}
+}
+
+func TestPingRejectsUnauthorized(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]any{"error": "unauthorized"})
+	}))
+	defer srv.Close()
+
+	c := New("bad-key", srv.URL)
+	if err := c.Ping(context.Background()); err == nil {
+		t.Fatal("expected unauthorized error")
+	}
+}
+
 func TestChallengeVerifyAllow(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/challenge/verify" {

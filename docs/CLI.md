@@ -2,20 +2,53 @@
 
 Binary name: `fortmemory`
 
-## Commands (target)
+## Default: start the server
+
+```bash
+fortmemory
+# same as:
+fortmemory serve
+fortmemory start
+```
+
+**Just works.**
+
+- **First run:** one `[Y/n]` confirm with defaults (`~/Vaults/FortMemory`, id `personal`).
+- **Custom path/id:** `fortmemory init ~/path --id myid` (no freeform prompts on start).
+- **Later runs:** reopens last vault — no prompts.
+- **Non-interactive:** auto-creates defaults (`FORTMEMORY_YES=1` or non-TTY).
+
+Discovery order:
+
+1. `--config path`
+2. env `FORTMEMORY_CONFIG`
+3. walk up from current directory for `.fortmemory/config.toml`
+4. last active vault (`~/.config/fortmemory/active`)
+5. default vault if it already exists
+6. first-run setup wizard (or silent default when non-interactive)
+
+Stop with **Ctrl+C**. Open http://127.0.0.1:7432/
+
+## Commands
 
 ### `fortmemory version`
 
-Print version and commit if available.
+Print version.
+
+### `fortmemory help`
+
+Print usage.
 
 ### `fortmemory init [path]`
 
 Initialize a vault for FortMemory.
 
 ```bash
-fortmemory init ~/Vaults/Personal
-fortmemory init ~/Vaults/Personal --id personal --force
+fortmemory init ~/Vaults/FortMemory-Test --id test
+fortmemory init ~/Vaults/FortMemory-Test --id test --force
 ```
+
+Path and flags can be in either order (`init path --id test` or `init --id test path`).
 
 Behavior:
 
@@ -25,14 +58,13 @@ Behavior:
 - Create empty `receipts.jsonl`  
 - Refuse to overwrite existing config without `--force`  
 
-### `fortmemory write` (implemented)
+### `fortmemory write`
 
 Governed write via FortSignal (no HTTP server required).
 
 ```bash
 export FORTSIGNAL_API_KEY=fs_live_...
 fortmemory write \
-  --config ~/Vaults/Personal/.fortmemory/config.toml \
   --key ~/agent-key.json \
   --path Scratch/note.md \
   --body "# hello" \
@@ -42,14 +74,14 @@ fortmemory write \
 Flags: `--config`, `--key`, `--path`, `--body` | `--file`, `--mode`, `--agent`  
 Stdout: JSON `MutateResult` (`decision`, `signalId`, …). Non-zero exit on deny.  
 
-### `fortmemory serve`
+### `fortmemory serve` / `fortmemory start`
 
-Run the local memory server.
+Run the local memory server (also the default when you type bare `fortmemory`).
 
 ```bash
-fortmemory serve
-fortmemory serve --config ~/Vaults/Personal/.fortmemory/config.toml
-fortmemory serve --port 7432 --bind 127.0.0.1
+fortmemory
+fortmemory --config ~/Vaults/FortMemory-Test/.fortmemory/config.toml
+fortmemory serve --config ~/Vaults/FortMemory-Test/.fortmemory/config.toml
 ```
 
 Flags:
@@ -57,9 +89,6 @@ Flags:
 | Flag | Default | Notes |
 |------|---------|-------|
 | `--config` | discover from cwd / env | Path to config |
-| `--bind` | `127.0.0.1` | Dangerous if `0.0.0.0` |
-| `--port` | `7432` | |
-| `--vault` | from config | Override vault root |
 
 ### `fortmemory reindex`
 

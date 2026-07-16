@@ -106,11 +106,18 @@ func runDoctor(args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	agents, err := client.ListAgents(ctx)
-	if err != nil {
+	// API-key health: challenge/start (not GET /agent/list — that is dashboard session only).
+	if err := client.Ping(ctx); err != nil {
 		fail("fortsignal-api", err.Error()+" (base="+cfg.FortSignal.APIBase+")")
 	} else {
-		pass("fortsignal-api", fmt.Sprintf("reachable; %d agent(s) on tenant", len(agents.Agents)))
+		pass("fortsignal-api", "API key accepted at "+cfg.FortSignal.APIBase)
+	}
+
+	// Optional dashboard list — informational only when using API keys.
+	if agents, err := client.ListAgents(ctx); err != nil {
+		warn("agent-list", "dashboard session only (expected with API key): "+err.Error())
+	} else {
+		pass("agent-list", fmt.Sprintf("%d agent(s) on tenant", len(agents.Agents)))
 		for _, a := range agents.Agents {
 			del := "no-delegation"
 			if a.Delegation != nil {

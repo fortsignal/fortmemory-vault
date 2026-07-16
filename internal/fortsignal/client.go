@@ -194,6 +194,10 @@ type AgentListItem struct {
 }
 
 // ListAgents calls GET /agent/list.
+//
+// FortSignal protects this route with dashboard session auth (passkey cookie/JWT),
+// not API keys. Callers using only FORTSIGNAL_API_KEY should expect 401 and treat
+// that as expected — use Ping or ChallengeStart for API-key health checks.
 func (c *Client) ListAgents(ctx context.Context) (*AgentListResponse, error) {
 	var out AgentListResponse
 	status, err := c.doJSON(ctx, http.MethodGet, "/agent/list", nil, &out)
@@ -206,10 +210,29 @@ func (c *Client) ListAgents(ctx context.Context) (*AgentListResponse, error) {
 	return &out, nil
 }
 
-// Ping does a lightweight authenticated call (agent list) to validate API key + reachability.
+// Ping validates API key + reachability via POST /challenge/start.
+//
+// A policy/delegation deny (403) still counts as success: the key was accepted.
+// Unauthorized (401) or transport failures are errors.
+// Do not use GET /agent/list here — that route is dashboard-session only.
 func (c *Client) Ping(ctx context.Context) error {
-	_, err := c.ListAgents(ctx)
-	return err
+	if c.APIKey == "" {
+		return fmt.Errorf("fortsignal: API key required")
+	}
+	start, err := c.ChallengeStart(ctx, ChallengeStartRequest{
+		AgentID:   "_fortmemory_ping",
+		Action:    ActionWrite,
+		Amount:    0,
+		Recipient: "ping",
+	})
+	if err != nil {
+		return err
+	}
+	// Challenge issued or structured deny both prove apiKeyMiddleware accepted us.
+	if start == nil {
+		return fmt.Errorf("fortsignal: empty ping response")
+	}
+	return nil
 }
 
 func (c *Client) doJSON(ctx context.Context, method, path string, in any, out any) (int, error) {

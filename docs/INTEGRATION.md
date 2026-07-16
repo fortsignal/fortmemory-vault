@@ -16,7 +16,8 @@ Use `fortmemory doctor` to verify your environment.
 | CLI write/delete gated | **Done** |
 | MCP tools gated | **Done** |
 | Local receipts + frontmatter `last_signal_id` | **Done** |
-| `GET /agent/list` health (doctor) | **Done** |
+| API-key health via challenge ping (doctor) | **Done** |
+| `GET /agent/list` (dashboard session only) | N/A for API keys |
 | `fortmemory doctor` | **Done** |
 | Human WebAuthn step-up from FM UI | Not MVP |
 | FortSignal `/agent/register` from CLI | Optional (dashboard path preferred) |
@@ -156,7 +157,7 @@ Then: sign challenge → verify → on allow, write file (+ annotate `last_signa
 |------------|------------|
 | `POST /challenge/start` | `internal/fortsignal` + `memory.Write` / `Delete` |
 | `POST /challenge/verify` | same |
-| `GET /agent/list` | `fortmemory doctor` |
+| API-key ping (`POST /challenge/start`) | `fortmemory doctor` |
 | `POST /agent/register` | Dashboard preferred; client method exists |
 | Composer / dashboard | Settings deep links only |
 | Delegation | Required; never created by FortMemory |
