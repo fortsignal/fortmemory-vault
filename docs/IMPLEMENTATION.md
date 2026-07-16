@@ -19,6 +19,8 @@
 | Hybrid embeddings | **Done** | optional Ollama; FTS fallback |
 | CLI delete | **Done** | FortSignal-gated |
 | Public repo prep | **Done** | git init, PUBLISH.md, examples |
+| Integration doctor | **Done** | `fortmemory doctor` + agent list + challenge probe |
+| Integration guide | **Done** | docs/INTEGRATION.md |
 
 ## Strategy
 

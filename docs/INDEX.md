@@ -27,7 +27,8 @@
 | [openapi.yaml](./openapi.yaml) | Codegen / contract |
 | [CLI.md](./CLI.md) | Operator UX |
 | [FORTSIGNAL.md](./FORTSIGNAL.md) | Integration overview |
-| [FORTSIGNAL-INTEGRATION.md](./FORTSIGNAL-INTEGRATION.md) | **API-aligned contract** (from fortsignal-api) |
+| [INTEGRATION.md](./INTEGRATION.md) | **Operator setup + doctor checklist** |
+| [FORTSIGNAL-INTEGRATION.md](./FORTSIGNAL-INTEGRATION.md) | Wire-level API contract |
 | [PRODUCT-SURFACE.md](./PRODUCT-SURFACE.md) | **UI IA, value-first UX, agent surfaces** |
 | [UI.md](./UI.md) | Dashboard screen specs |
 | [UI-HYBRID.md](./UI-HYBRID.md) | Desktop/local hybrid delivery |

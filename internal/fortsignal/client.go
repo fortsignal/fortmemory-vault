@@ -169,10 +169,47 @@ func (c *Client) RegisterAgent(ctx context.Context, req AgentRegisterRequest) (*
 	if err != nil {
 		return nil, err
 	}
-	if status != http.StatusOK {
+	if status != http.StatusOK && status != http.StatusCreated {
 		return nil, fmt.Errorf("fortsignal: agent/register status %d", status)
 	}
 	return &out, nil
+}
+
+// AgentListResponse is GET /agent/list.
+type AgentListResponse struct {
+	Agents []AgentListItem `json:"agents"`
+}
+
+// AgentListItem is one registered agent summary.
+type AgentListItem struct {
+	AgentID      string `json:"agentId"`
+	RegisteredAt string `json:"registeredAt,omitempty"`
+	RotatedAt    string `json:"rotatedAt,omitempty"`
+	Delegation   *struct {
+		DelegationID string `json:"delegationId"`
+		PolicyID     string `json:"policyId"`
+		IssuedAt     string `json:"issuedAt,omitempty"`
+		ExpiresAt    string `json:"expiresAt,omitempty"`
+	} `json:"delegation,omitempty"`
+}
+
+// ListAgents calls GET /agent/list.
+func (c *Client) ListAgents(ctx context.Context) (*AgentListResponse, error) {
+	var out AgentListResponse
+	status, err := c.doJSON(ctx, http.MethodGet, "/agent/list", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	if status != http.StatusOK {
+		return nil, fmt.Errorf("fortsignal: agent/list status %d", status)
+	}
+	return &out, nil
+}
+
+// Ping does a lightweight authenticated call (agent list) to validate API key + reachability.
+func (c *Client) Ping(ctx context.Context) error {
+	_, err := c.ListAgents(ctx)
+	return err
 }
 
 func (c *Client) doJSON(ctx context.Context, method, path string, in any, out any) (int, error) {

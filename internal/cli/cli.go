@@ -66,6 +66,8 @@ func Execute(args []string) error {
 		return runTailscale(args[1:])
 	case "mcp":
 		return runMCP(args[1:])
+	case "doctor":
+		return runDoctor(args[1:])
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
@@ -85,6 +87,7 @@ Usage:
   fortmemory reindex
   fortmemory agent add <agentId>
   fortmemory mcp --agent <id> [--config path] [--key path]
+  fortmemory doctor [--key agent-key.json] [--write-probe]
   fortmemory cloudflare install|check|config|quick|run
   fortmemory tailscale [check|print-serve]
   fortmemory tunnel cloudflare|tailscale … (aliases)
@@ -95,7 +98,7 @@ Environment:
   FORTSIGNAL_API_KEY   FortSignal API key (required for write)
   FORTMEMORY_CONFIG    Path to .fortmemory/config.toml
 
-Docs: docs/CLI.md  docs/CLOUDFLARE-TUNNEL.md  docs/OPEN-CORE.md
+Docs: docs/INTEGRATION.md  docs/CLI.md  docs/OPEN-CORE.md
 `))
 }
 
