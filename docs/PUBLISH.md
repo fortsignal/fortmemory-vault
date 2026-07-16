@@ -1,38 +1,55 @@
 # Publishing FortMemory (public repo checklist)
 
+**Remote:** https://github.com/fortsignal/fortmemory-vault  
+**Module:** `github.com/fortsignal/fortmemory-vault`  
+**License:** Apache-2.0 (`LICENSE` + `NOTICE`)
+
 ## Before first push
 
-- [ ] No secrets in tree (`rg -i 'fs_live_|fm_[a-f0-9]{20}|BEGIN PRIVATE'`)  
-- [ ] `.gitignore` covers `.env`, keys, `bin/`, sqlite, `.fortmemory/`  
-- [ ] `LICENSE` Apache-2.0 + `NOTICE` present  
-- [ ] `go test ./...` green  
-- [ ] README describes: local free · FortSignal for governance · no domain required for MVP  
-- [ ] Prefer empty history if this folder ever held private keys  
+- [x] No secrets in tree  
+- [x] `.gitignore` covers `.env`, keys, `bin/`, sqlite, `.fortmemory/`  
+- [x] `LICENSE` Apache-2.0 + `NOTICE`  
+- [x] `SECURITY.md` at repo root  
+- [x] `go test ./...` green  
+- [x] Professional README  
 
-## Suggested remote
+## Push (from this machine)
 
-```text
-github.com/fortsignal/fortmemory-vault
-```
+Local `main` already has the initial commit. Authenticate as a user/org with write access to `fortsignal/fortmemory-vault`, then:
 
 ```bash
 cd ~/projects/fortmemory-vault
-git init
-git add .
-git status   # review carefully
-git commit -m "Initial public release: local FortMemory server"
-# create empty public repo on GitHub, then:
-git branch -M main
-git remote add origin git@github.com:fortsignal/fortmemory.git
+git remote -v
+# preferred:
+git remote set-url origin git@github.com:fortsignal/fortmemory-vault.git
+# or HTTPS with a PAT:
+# git remote set-url origin https://github.com/fortsignal/fortmemory-vault.git
+
 git push -u origin main
 ```
 
-## Install for others
+If SSH is bound to the wrong GitHub user, use:
+
+```bash
+GIT_SSH_COMMAND='ssh -i ~/.ssh/YOUR_FORTSIGNAL_KEY -o IdentitiesOnly=yes' \
+  git push -u origin main
+```
+
+Or GitHub CLI (after `gh auth login`):
+
+```bash
+gh auth login
+gh repo sync  # or just git push
+```
+
+## Install for others (after push)
 
 ```bash
 go install github.com/fortsignal/fortmemory-vault/cmd/fortmemory@latest
+
 # or
-git clone … && cd fortmemory && make build
+git clone https://github.com/fortsignal/fortmemory-vault.git
+cd fortmemory-vault && make build
 ```
 
 ## Do not publish
